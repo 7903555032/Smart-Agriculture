@@ -1,0 +1,9 @@
+📲 Blynk Dashboard (Template Name: Smart Agriculture)
+Blynk Pin	Function
+V0	Manual Override (Switch)
+V1	Manual Motor ON/OFF (Switch)
+V3	Temperature Display
+V5	LDR Status (0/1)
+V6	Status Display (Label)
+V7	Soil Moisture Value
+V8	Rain Sensor Value
