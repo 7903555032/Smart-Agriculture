@@ -1,0 +1,17 @@
+⚙️ Components Used
+Component	Quantity
+ESP32 Dev Board	1
+DHT11 (Temp & Humidity)	1
+Soil Moisture Sensor	1
+Rain Sensor	1
+LDR (Light Sensor)	1
+5V DC Fan	1
+NPN Transistor (e.g., 2N2222/BC547)	1
+Relay Module (for pump)	1
+Buzzer	1
+LEDs (Red, Green, Orange, Blue, White)	5
+Push Button	1
+Resistors (10k, 1k, etc.)	As needed
+Voltage Divider Resistors	2 per sensor
+Breadboard & Jumper Wires	-
+Power Supply (5V/12V)	-
