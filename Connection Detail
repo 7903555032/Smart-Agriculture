@@ -1,0 +1,89 @@
+📡 Smart Agriculture System – Connection Info
+🧠 Microcontroller:
+ESP32 Dev Module
+
+🔌 Power Supply:
+ESP32: via USB (5V)
+
+Sensors (5V logic): Powered via 5V pin on ESP32 (with voltage dividers where needed)
+
+Actuators: Controlled through GPIOs with external power via relay/transistor
+
+🌱 Phase 1 – Soil Moisture Control
+Component	ESP32 Pin	Notes
+Soil Sensor	GPIO 34	Analog read (via Voltage Divider)
+Red LED	GPIO 15	Indicates dry soil
+Green LED	GPIO 2	Indicates moist soil
+Buzzer	GPIO 26	Active buzzer
+Relay Module	GPIO 27	Controls water pump
+Push Button	GPIO 13	Toggles manual/auto mode
+
+🌡️ Phase 2 – Temperature Control
+Component	ESP32 Pin	Notes
+DHT11 Sensor	GPIO 4	Temperature sensor
+Orange LED	GPIO 22	Indicates high temperature
+DC Fan	GPIO 14	Connected via NPN Transistor (5V Fan)
+
+Fan Control Circuit:
+
+NPN Transistor (e.g., 2N2222, BC547):
+
+Base → GPIO 14 (with 1kΩ resistor)
+
+Collector → GND (Fan -)
+
+Emitter → GND
+
+Fan + → 5V
+
+🌧️ Phase 3 – Rain Detection
+Component	ESP32 Pin	Notes
+Rain Sensor	GPIO 35	Analog read (via voltage divider)
+Blue LED	GPIO 21	Indicates rain
+
+🌞 Phase 4 – Light Detection
+Component	ESP32 Pin	Notes
+LDR Module	GPIO 32	Digital LDR sensor
+White LED	GPIO 19	Lights up in dark
+
+⚡ Voltage Divider Circuit (for 5V sensors to ESP32)
+To convert 5V analog signals (from Soil/Rain sensors) to 3.3V safe range:
+
+Example Values:
+R1 = 10kΩ (top resistor)
+
+R2 = 20kΩ (bottom resistor)
+
+Output to ESP32 Analog Pin:
+Vout=Vin×R2/(R1+R2)
+Vout=5V×20k/(10k+20k)≈3.3V
+
+🧠 Additional Notes:
+Blynk handles real-time monitoring and manual override.
+
+Manual/Auto control through Blynk buttons or physical button.
+
+Fan works on 5V but is safely driven using NPN transistor (because ESP32 can’t provide sufficient current).
+
+Buzzer and LEDs give real-time field feedback.
+
+📷 Circuit Diagram (Text Description)
+[Soil Sensor] --- Voltage Divider --- GPIO34
+[Rain Sensor] --- Voltage Divider --- GPIO35
+[DHT11] ----------------------------- GPIO4
+[LDR Sensor] ------------------------ GPIO32
+[Button] ---------------------------- GPIO13 (INPUT_PULLUP)
+
+[RED LED] --------------------------- GPIO15
+[GREEN LED] ------------------------- GPIO2
+[ORANGE LED] ------------------------ GPIO22
+[BLUE LED] -------------------------- GPIO21
+[WHITE LED] ------------------------- GPIO19
+[BUZZER] ---------------------------- GPIO26
+
+[Relay (Pump)] ---------------------- GPIO27
+
+[FAN (5V)] --- Collector of NPN
+              Base --- 1k Resistor --- GPIO14
+              Emitter --- GND
+              Fan+ --- 5V
