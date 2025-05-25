@@ -1,0 +1,208 @@
+// PHASE 5 - Blynk
+#define BLYNK_TEMPLATE_ID "TMPL3LBw2OcaL"
+#define BLYNK_TEMPLATE_NAME "Smart Agriculture"
+#define BLYNK_AUTH_TOKEN "0zDMCpNbxUhECUvRLR3RUIX0SLjx66Sl"
+
+char ssid[] = "IOTWifi";
+char pass[] = "9199011445";
+
+#include <DHT.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+
+// PHASE 1 - Moisture Control
+#define SOIL_PIN       34
+#define RED_LED        15
+#define GREEN_LED      2
+#define BUZZER         26
+#define RELAY_PIN      27
+#define BUTTON_PIN     13
+
+// PHASE 2 - Temperature Control
+#define DHTPIN         4
+#define DHTTYPE        DHT11
+#define ORANGE_LED     22
+#define FAN_PIN        14
+
+// PHASE 3 - Rain Detection
+#define RAIN_SENSOR    35
+#define BLUE_LED       21
+
+// PHASE 4 - Light Detection
+#define LDR_PIN        32
+#define WHITE_LED      19
+
+
+
+DHT dht(DHTPIN, DHTTYPE);
+BlynkTimer timer;
+
+int moistureThreshold = 2000;
+float tempThreshold = 25.0;
+int rainThreshold = 2500;
+
+bool manualOverride = false;
+bool manualState = false;
+
+bool lastButtonReading = HIGH;
+bool lastButtonState = HIGH;
+unsigned long lastDebounceTime = 0;
+unsigned long debounceDelay = 50;
+
+// === BLYNK INPUT HANDLERS ===
+BLYNK_WRITE(V0) {
+  manualOverride = param.asInt();
+  Blynk.virtualWrite(V6, manualOverride ? "Manual Mode Enabled" : "Auto Mode Enabled");
+}
+
+BLYNK_WRITE(V1) {
+  manualState = param.asInt();
+  Blynk.virtualWrite(V6, manualState ? "Manual: Pump ON" : "Manual: Pump OFF");
+}
+
+// === DATA SEND FUNCTION TO BLYNK ===
+void sendToBlynk() {
+  int soilValue = analogRead(SOIL_PIN);
+  float temp = dht.readTemperature();
+  int rainValue = analogRead(RAIN_SENSOR);
+  int ldrStatus = digitalRead(LDR_PIN);
+
+  Blynk.virtualWrite(V7, soilValue);
+  Blynk.virtualWrite(V3, temp);
+  Blynk.virtualWrite(V8, rainValue);
+  Blynk.virtualWrite(V5, ldrStatus);
+}
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  pinMode(RED_LED, OUTPUT);
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+  pinMode(RELAY_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  pinMode(ORANGE_LED, OUTPUT);
+  pinMode(FAN_PIN, OUTPUT);
+
+  pinMode(BLUE_LED, OUTPUT);
+  pinMode(LDR_PIN, INPUT);
+  pinMode(WHITE_LED, OUTPUT);
+
+  digitalWrite(RED_LED, LOW);
+  digitalWrite(GREEN_LED, LOW);
+  digitalWrite(BUZZER, LOW);
+  digitalWrite(RELAY_PIN, HIGH);
+  digitalWrite(ORANGE_LED, LOW);
+  digitalWrite(FAN_PIN, LOW);
+  digitalWrite(BLUE_LED, LOW);
+  digitalWrite(WHITE_LED, LOW);
+
+  Serial.println("========== Soil, Temp, Rain & Light Monitoring ==========");
+  Serial.println("System Initialized...");
+  Serial.print("Moisture Threshold: "); Serial.println(moistureThreshold);
+  Serial.print("Temperature Threshold: "); Serial.println(tempThreshold);
+  Serial.print("Rain Threshold: "); Serial.println(rainThreshold);
+  Serial.println("=========================================================");
+
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  timer.setInterval(2000L, sendToBlynk);
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+
+  int soilValue = analogRead(SOIL_PIN);
+  bool reading = digitalRead(BUTTON_PIN);
+
+  if (reading != lastButtonReading) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != lastButtonState) {
+      lastButtonState = reading;
+      if (reading == LOW) {
+        manualOverride = !manualOverride;
+        manualState = !manualState;
+        Serial.println(manualOverride ? "Manual Mode Enabled" : "Manual Mode Disabled");
+        Serial.println(manualState ? "Manual: Motor ON" : "Manual: Motor OFF");
+        Blynk.virtualWrite(V0, manualOverride);
+        Blynk.virtualWrite(V1, manualState);
+      }
+    }
+  }
+  lastButtonReading = reading;
+
+  Serial.print("Soil Moisture: ");
+  Serial.print(soilValue);
+  Serial.print(" | Mode: ");
+  Serial.println(manualOverride ? "MANUAL" : "AUTO");
+
+  if (manualOverride) {
+    digitalWrite(RELAY_PIN, manualState ? LOW : HIGH);
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(BUZZER, LOW);
+    digitalWrite(GREEN_LED, manualState ? HIGH : LOW);
+  } else {
+    if (soilValue > moistureThreshold) {
+      digitalWrite(RED_LED, HIGH);
+      digitalWrite(BUZZER, HIGH);
+      digitalWrite(GREEN_LED, LOW);
+      digitalWrite(RELAY_PIN, LOW);
+      Serial.println("Status: Soil is DRY → Pumping water...");
+    } else {
+      digitalWrite(RED_LED, LOW);
+      digitalWrite(BUZZER, LOW);
+      digitalWrite(GREEN_LED, HIGH);
+      digitalWrite(RELAY_PIN, HIGH);
+      Serial.println("Status: Soil is MOIST → No action.");
+    }
+  }
+
+  float temp = dht.readTemperature();
+  if (isnan(temp)) {
+    Serial.println("Error reading temperature!");
+  } else {
+    Serial.print("Temperature: ");
+    Serial.print(temp);
+    Serial.println(" °C");
+
+    if (temp > tempThreshold) {
+      digitalWrite(ORANGE_LED, HIGH);
+      digitalWrite(FAN_PIN, HIGH);
+      Serial.println("Over Temp! → Fan & Orange LED ON");
+    } else {
+      digitalWrite(ORANGE_LED, LOW);
+      digitalWrite(FAN_PIN, LOW);
+      Serial.println("Temperature Normal → Fan & Orange LED OFF");
+    }
+  }
+
+  int rainValue = analogRead(RAIN_SENSOR);
+  Serial.print("Rain Sensor Value: ");
+  Serial.println(rainValue);
+
+  if (rainValue < rainThreshold) {
+    digitalWrite(BLUE_LED, HIGH);
+    Serial.println("Rain Detected → Blue LED ON");
+  } else {
+    digitalWrite(BLUE_LED, LOW);
+    Serial.println("No Rain → Blue LED OFF");
+  }
+
+  int ldrStatus = digitalRead(LDR_PIN);
+  if (ldrStatus == HIGH) {
+    digitalWrite(WHITE_LED, HIGH);
+    Serial.println("Dark Detected → White LED ON");
+  } else {
+    digitalWrite(WHITE_LED, LOW);
+    Serial.println("Light Detected → White LED OFF");
+  }
+
+  Serial.println("---------------------------------------------------------");
+  delay(500);
+}
