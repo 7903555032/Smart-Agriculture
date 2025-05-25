@@ -1,0 +1,31 @@
+🔌 Circuit Enhancements
+⚡ Voltage Divider Circuit for Analog Sensors
+Since ESP32’s analog input pins support only up to 3.3V, sensors outputting up to 5V (e.g., rain sensor) require a voltage divider.
+
+Example:
+
+text
+Copy code
+5V Sensor Output
+   |
+  R1 = 10kΩ
+   |
+   |-----> To ESP32 ADC (max 3.3V)
+   |
+  R2 = 20kΩ
+   |
+  GND
+🔄 NPN Transistor Circuit for 5V DC Fan
+To control a 5V fan with ESP32 (3.3V logic), an NPN transistor acts as a switch.
+
+Circuit:
+
+ESP32 GPIO → 1kΩ → NPN Base
+
+NPN Collector → Fan Negative
+
+Fan Positive → 5V
+
+NPN Emitter → GND
+
+Add flyback diode across fan terminals (e.g., 1N4007) for protection.
